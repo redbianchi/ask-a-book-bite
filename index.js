@@ -1,13 +1,10 @@
-const express = require('express');
-
-const cheerio = require('cheerio');
 require('dotenv').config();
+const express = require('express');
+const { default: axios } = require('axios');
 const path = require('path');
 
-const { default: axios } = require('axios');
-
 const app = express();
-
+const port = 3000; // Change the port number if needed
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -18,45 +15,33 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/favicon.ico', (req, res) => {
-    res.sendStatus(204);
-  });
-
 app.post('/ask', async (req, res) => {
-  const { url, question } = req.body;
+  const { question, context } = req.body;
+
+  const prompt = `${context}\n\nQ: ${question}\nA:`;
 
   try {
-    // Make a request to the ChatGPT API
-    const chatResponse = await axios.post('https://api.openai.com/v1/chat/completions', {
-      model: 'text-davinci-003',
-      messages: [
-        { role: 'system', content: 'You are a helpful assistant.' },
-        { role: 'user', content: question }
-      ]
+    const response = await axios.post('https://api.openai.com/v1/engines/text-davinci-003/completions', {
+      prompt,
+      max_tokens: 200,
     }, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      }
+      },
     });
 
-    const answer = chatResponse.data.choices[0].text.trim();
+    // Extract the answer from the response
+    const answer = response.data.choices[0].text;
 
     res.json({ answer });
   } catch (error) {
-    console.error('Error:', error.response?.data?.error || error.message);
-    const statusCode = error.response?.status || 500;
-    res.status(statusCode).json({ error: 'Internal server error' });
+    console.error('ChatGPT API call failed:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
+
 });
 
-function extractBodyText(html) {
-  const $ = cheerio.load(html);
-  const bodyText = $('body').text();
-  return bodyText;
-}
-
-const port = process.env.PORT || 3000
 app.listen(port, () => {
-    console.log(`backend running on port ${port}!`);
+  console.log(`Server running on port ${port}`);
 });

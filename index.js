@@ -26,19 +26,18 @@ app.post('/ask', async (req, res) => {
   const { url, question } = req.body;
 
   try {
-    const response = await axios.get(url);
-    const bodyText = extractBodyText(response.data);
-
-    const prompt = `${bodyText}\n\nQ: ${question}\nA:`;
-
-    const chatResponse = await axios.post('https://api.openai.com/v1/engines/text-davinci-003/completions', {
-      prompt,
-      max_tokens: 200,
+    // Make a request to the ChatGPT API
+    const chatResponse = await axios.post('https://api.openai.com/v1/chat/completions', {
+      model: 'text-davinci-003',
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: question }
+      ]
     }, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
+        'Authorization': `${process.env.OPENAI_API_KEY}`
+      }
     });
 
     const answer = chatResponse.data.choices[0].text.trim();

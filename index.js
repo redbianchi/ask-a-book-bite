@@ -15,7 +15,7 @@ app.use(express.json());
 const apiKey = process.env.OPENAI_API_KEY;
 
 app.get('/', (req, res) => {
-  res.sendFile(__dirname, + '/index.html');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/favicon.ico', (req, res) => {
